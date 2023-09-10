@@ -66,6 +66,59 @@ app.post('/user/register', async (req,res)=>{
 
 })
 
+app.post('/auth/user', async(req,res)=>{
+    const { email , password} = req.body;
+   
+    if(!email){
+        return res.status(422).json({
+            msg: 'O email é obrigatório'
+        })
+    }
+    if(!password){
+        return res.status(422).json({
+            msg: 'O password é obrigatório'
+        })
+    }
+    
+    const user =  await User.findOne({email: email})
+
+    if(!user){
+        return res.status(404).json({
+            msg:'Usuário não encontrado'
+        })
+    }
+
+    const checkPassword = await bcrypt.compare(password, user.password)
+
+    if(!checkPassword){
+        return res.status(422).json({
+            msg:'Senha incorreta'
+        })
+    }
+
+    try{
+        const secret = process.env.SECRET
+        
+        const token = jwt.sign({
+            id: user._id,
+        }, 
+        secret,
+        )
+        res.status(200).json({
+            msg:'Autenticacao realizada com sucesso',
+            token
+        })
+
+    }
+    catch(e){
+        console.log(e)
+        res.status(500).json({
+            msg:e
+        })
+    }
+})
+
+
 
 const dbUser = process.env.DB_USER
 const dbPassword = process.env.DB_PASSWORD
