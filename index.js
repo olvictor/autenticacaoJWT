@@ -14,6 +14,45 @@ app.get('/',(req,res)=>{
     res.send('ksopa')
 })
 
+const checkToken = (req,res, next) => {
+
+    const authHeader = req.headers['authorization']
+
+    const token = authHeader && authHeader.split(" ")[1]
+    if(!token){
+        return res.status(401).json({
+            msg:'Acesso negado'
+        })
+    }
+
+    try{    
+        const secret = process.env.SECRET
+        
+        jwt.verify(token,secret)
+
+        next()
+    }catch(e){
+        res.status(400).json({
+            msg:'Token Inválido'
+        })
+    }
+
+}
+
+app.get('/user/:id',checkToken, async(req,res)=>{
+
+    const { id } = req.params
+
+    const user =  await User.findById(id, '-password')
+   
+
+    res.status(200).json({
+        user
+    })
+})
+
+
+
 app.post('/user/register', async (req,res)=>{
     const { name , password , email} = req.body
 
@@ -54,7 +93,6 @@ app.post('/user/register', async (req,res)=>{
     })
     try{
         await user.save()
-
         res.status(201).json({
             msg:'Usuário criado com sucesso .'
         })
@@ -81,7 +119,6 @@ app.post('/auth/user', async(req,res)=>{
     }
     
     const user =  await User.findOne({email: email})
-
     if(!user){
         return res.status(404).json({
             msg:'Usuário não encontrado'
